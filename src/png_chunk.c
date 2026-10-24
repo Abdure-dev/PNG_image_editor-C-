@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 
 
 int pt_signature(FILE *f){
@@ -32,6 +32,18 @@ uint32_t read_int(FILE *f){
    return len;
 }
 
+char *read_tag(FILE *f){
+
+    char *tag = malloc(5);
+    if(!tag) return NULL;
+    (void)fread(tag,1,4,f);
+    tag[4] = '\0';
+    return tag;
+
+
+
+}
+
 int main(int argc, char *argv[]){
  if(argc !=2){
     fprintf(stderr,"usage: %s <file.png>\n", argv[0]);
@@ -45,7 +57,17 @@ int main(int argc, char *argv[]){
  int ok = pt_signature(f);
  printf("%s: %s\n",argv[1],ok? "valid PNG" : "not a PNG");
   if (ok) {
-     printf("first chunk length: %u\n", read_int(f));
+     while(1){
+
+        uint32_t length = read_int(f);
+        char *tag = read_tag(f);
+        printf("%s %u\n", tag, length);
+        int done = strcmp(tag, "IEND")==0;
+        free(tag);
+        if(done) break;
+        if(feof(f)) break;
+        fseek(f,length + 4, SEEK_CUR);
+     }
  }
  fclose(f);
  return ok?0:1;
