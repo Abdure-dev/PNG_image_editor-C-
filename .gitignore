@@ -1,0 +1,6 @@
+build/
+*.o
+pngedit
+*.dSYM
+.DS_Store
+tests/images/*.png
