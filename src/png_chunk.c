@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+struct dimenstion {
+  uint32_t width;
+  uint32_t height;
+};
+
+typedef struct dimenstion dimenstion;
+
 
 int pt_signature(FILE *f){
 
@@ -40,9 +47,27 @@ char *read_tag(FILE *f){
     tag[4] = '\0';
     return tag;
 
+}
+
+dimenstion *pt_dimesnion(FILE *f){
+    if(!pt_signature(f)){
+        return NULL;
+    }
+    (void)read_int(f);
+    fseek(f,4,SEEK_CUR);
+    dimenstion *wh = malloc(sizeof(dimenstion));
+    if(!wh) return NULL;
+     wh->width = read_int(f);
+     wh->height = read_int(f);
+
+    return wh;
+
 
 
 }
+
+
+
 
 int main(int argc, char *argv[]){
  if(argc !=2){
@@ -54,8 +79,16 @@ int main(int argc, char *argv[]){
   perror(argv[1]);
       return  1;
  }
+ 
+        dimenstion *d = pt_dimesnion(f);
+        if(d){
+            printf("%u x %u\n", d->width, d->height);
+            free(d);
+        }
+ fseek(f,0,SEEK_SET);
  int ok = pt_signature(f);
  printf("%s: %s\n",argv[1],ok? "valid PNG" : "not a PNG");
+ 
   if (ok) {
      while(1){
 
