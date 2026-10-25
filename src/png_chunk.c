@@ -9,6 +9,19 @@ struct dimenstion {
 
 typedef struct dimenstion dimenstion;
 
+struct chunklist {
+    uint32_t start_byte;
+    uint32_t length;
+    char *chunk_type;
+    struct chunklist *next;
+
+
+
+};
+
+typedef struct chunklist chunklist;
+
+
 
 int pt_signature(FILE *f){
 
@@ -66,7 +79,30 @@ dimenstion *pt_dimesnion(FILE *f){
 
 }
 
+chunklist *pt_map(FILE *f){
+  if(!pt_signature(f)) return NULL;
+  chunklist *head = NULL;
+  chunklist *tail = NULL;
+  while(1){
+  long start_byte = ftell(f);
+  uint32_t length = read_int(f);
+  char *tag = read_tag(f);
+  chunklist *node = malloc(sizeof(chunklist));
+  if(!node) return NULL;
+  node->start_byte = start_byte;
+  node->length = length;
+  node->chunk_type = tag;
+  node->next = NULL;
 
+  if(head == NULL) head = node;
+  else tail->next = node;
+  tail = node;
+  if(strcmp(node->chunk_type, "IEND")==0) break;
+  if(feof(f)) break;
+  fseek(f,length + 4, SEEK_CUR);
+  }
+  return head;
+}
 
 
 int main(int argc, char *argv[]){
@@ -85,6 +121,13 @@ int main(int argc, char *argv[]){
             printf("%u x %u\n", d->width, d->height);
             free(d);
         }
+ fseek(f,0,SEEK_SET);
+ chunklist *list = pt_map(f);
+ for(chunklist *p = list; p !=NULL; p=p->next){
+
+  printf("%u %s %u\n", p->start_byte, p->chunk_type, p->length);
+
+ }
  fseek(f,0,SEEK_SET);
  int ok = pt_signature(f);
  printf("%s: %s\n",argv[1],ok? "valid PNG" : "not a PNG");
@@ -105,3 +148,9 @@ int main(int argc, char *argv[]){
  fclose(f);
  return ok?0:1;
 }
+
+
+
+
+
+
