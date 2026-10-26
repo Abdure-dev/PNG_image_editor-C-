@@ -19,6 +19,15 @@ struct chunklist {
 
 };
 
+struct key_value{
+
+  char *key;
+  char *value;
+
+
+};
+typedef struct key_value key_value;
+
 typedef struct chunklist chunklist;
 
 
@@ -105,6 +114,67 @@ chunklist *pt_map(FILE *f){
 }
 
 
+key_value *extract_text(FILE *f, uint32_t n){
+    if(!pt_signature(f)){
+      return NULL;
+        }
+    uint32_t count = 0;
+    while(1){
+      uint32_t length = read_int(f);
+      char *tag = read_tag(f);
+
+      if(strcmp(tag, "tEXt")==0){
+          if (count == n){
+                char *buf = malloc(length + 1);
+                if(!buf) return NULL;
+                fread(buf,1,length,f);
+                buf[length] = '\0';
+                size_t  klen = 0;
+                while(buf[klen] != '\0'){
+                  klen++;
+                }
+                size_t vlen = length - klen - 1;
+                char *key = malloc(klen + 1);
+                if(!key) return NULL;
+                memcpy(key, buf, klen);
+                key[klen] = '\0';
+
+                char *value = malloc(vlen + 1);
+                if(!value) return NULL;
+                memcpy(value, buf + klen + 1, vlen);
+                value[vlen] = '\0';
+                key_value *kv = malloc(sizeof(key_value));
+                if(!kv) return NULL;
+                kv->key = key;
+                 kv->value = value;
+
+  
+                free(buf);
+
+                return kv;
+
+          }
+        count++;
+
+
+      }
+
+   int done = strcmp (tag, "IEND") == 0;
+   free(tag);
+   if(done) break;
+   if(feof(f)) break;
+   fseek(f,length + 4, SEEK_CUR);
+
+    }
+   return NULL;
+
+}
+
+
+
+
+
+
 int main(int argc, char *argv[]){
  if(argc !=2){
     fprintf(stderr,"usage: %s <file.png>\n", argv[0]);
@@ -128,6 +198,19 @@ int main(int argc, char *argv[]){
   printf("%u %s %u\n", p->start_byte, p->chunk_type, p->length);
 
  }
+ fseek(f,0,SEEK_SET);
+
+ key_value *kv = extract_text(f,0);
+ if(kv){
+  printf("%s = %s\n", kv->key, kv->value);
+  free(kv->key);
+  free(kv->value);
+  free(kv);
+
+
+
+ }
+
  fseek(f,0,SEEK_SET);
  int ok = pt_signature(f);
  printf("%s: %s\n",argv[1],ok? "valid PNG" : "not a PNG");
